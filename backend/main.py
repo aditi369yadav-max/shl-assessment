@@ -9,6 +9,8 @@ import json
 import re
 from typing import List
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 from groq import Groq
@@ -216,6 +218,24 @@ async def chat(request: ChatRequest):
         recommendations=sanitize_recommendations(raw_recs),
         end_of_conversation=bool(data.get("end_of_conversation", False)),
     )
+
+
+# --- Serve frontend static files ---
+import pathlib
+static_dir = pathlib.Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    async def serve_root():
+        return FileResponse(str(static_dir / "index.html"))
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        # API routes take priority
+        if full_path.startswith(("health", "chat", "docs", "openapi")):
+            raise HTTPException(status_code=404)
+        return FileResponse(str(static_dir / "index.html"))
 
 
 if __name__ == "__main__":

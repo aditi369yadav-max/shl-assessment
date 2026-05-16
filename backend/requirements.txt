@@ -3,3 +3,4 @@ uvicorn[standard]==0.30.6
 groq==0.13.0
 pydantic==2.8.2
 python-dotenv==1.0.1
+aiofiles==23.2.1
